@@ -11,7 +11,7 @@ tasks without retraining: `a_i = argmax_a E[U_i(Z_i(s_i, a))]`, for homogeneous
 utilities. A bounded one-hop neighbour composer gives cheap task adaptation
 with the backbone frozen.
 
-Built on MA-USFA. `baselines/prlight.py` is a port of PLight/PRLight
+`baselines/prlight.py` is a port of PLight/PRLight
 (github.com/RL-DLMU/PRLight-and-PLight); SUMO scenarios under `data/raw_data/`
 are redistributed from LibSignal.
 
