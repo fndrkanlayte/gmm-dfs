@@ -4,50 +4,6 @@ import torch.nn.functional as F
 import numpy as np
 
 
-class MLPQNet(nn.Module):
-    """Independent per-agent Q-network (the IDDQN default).
-
-    Every intersection is scored from its OWN observation only -- there is no
-    cross-agent information flow, exactly the "independent learners" setting
-    (IQL/IDQN). Parameters are shared across agents (one network applied to each
-    agent's obs), and an optional per-agent identity embedding keeps
-    heterogeneous intersections distinguishable while introducing zero coupling.
-
-    Input  state : [B, N, state_dim]
-    Output Q     : [B, N, action_dim]
-    """
-
-    def __init__(self, state_dim, action_dim, agent_num, hidden_dim=64,
-                 use_agent_emb=True):
-        super().__init__()
-        self.state_dim = state_dim
-        self.action_dim = action_dim
-        self.agent_num = agent_num
-        self.use_agent_emb = use_agent_emb
-
-        in_dim = state_dim
-        if use_agent_emb:
-            self.agent_emb = nn.Embedding(agent_num, hidden_dim)
-            in_dim = state_dim + hidden_dim
-
-        self.net = nn.Sequential(
-            nn.Linear(in_dim, hidden_dim), nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
-            nn.Linear(hidden_dim, action_dim))
-
-    def _augment(self, state):
-        """Append each agent's own identity embedding to its own obs.
-        state: [B, N, state_dim] -> [B, N, in_dim]. No cross-agent mixing."""
-        if self.use_agent_emb:
-            emb = self.agent_emb.weight.unsqueeze(0).expand(state.shape[0], -1, -1)
-            state = torch.cat([state, emb], dim=-1)
-        return state
-
-    def forward(self, state):
-        x = self._augment(state)
-        return self.net(x)   # [B, N, action_dim]
-
-
 class GATLayer(nn.Module):
     """Single graph-attention layer (Velickovic et al. 2018), masked to a fixed
     1-hop adjacency.
@@ -55,8 +11,7 @@ class GATLayer(nn.Module):
     Each node aggregates a learned attention-weighted combination of its 1-hop
     neighbours' (and its own) transformed features. Attention logits for
     non-neighbour pairs are masked to -inf before the softmax, so a node only
-    ever attends within its neighbourhood -- the "consider 1-hop neighbours"
-    coupling the GAT variant is meant to add on top of the independent MLP.
+    ever attends within its neighbourhood. Used by :class:`NeighborComposer`.
 
     adj : [N, N] float {0,1} adjacency WITH self-loops (fixed, not learned).
     """
@@ -101,69 +56,10 @@ class GATLayer(nn.Module):
         return out.mean(dim=2)                                  # [B, N, d]
 
 
-class GATQNet(nn.Module):
-    """1-hop GAT Q-network variant.
-
-    A per-agent encoder lifts each intersection's observation (+ optional
-    identity embedding) into a hidden representation; ONE graph-attention layer
-    then mixes each node with its 1-hop neighbours (masked by the fixed road
-    adjacency); a per-agent head reads out Q-values. This is the only place
-    cross-agent information enters -- exactly a 1-hop coupled Q-function, in
-    contrast to the fully independent :class:`MLPQNet`.
-
-    The adjacency is registered as a buffer so it moves with .to(device) and is
-    saved/loaded with the network.
-
-    Input  state : [B, N, state_dim]
-    Output Q     : [B, N, action_dim]
-    """
-
-    def __init__(self, state_dim, action_dim, agent_num, adj, hidden_dim=64,
-                 n_heads=4, use_agent_emb=True):
-        super().__init__()
-        self.state_dim = state_dim
-        self.action_dim = action_dim
-        self.agent_num = agent_num
-        self.use_agent_emb = use_agent_emb
-
-        in_dim = state_dim
-        if use_agent_emb:
-            self.agent_emb = nn.Embedding(agent_num, hidden_dim)
-            in_dim = state_dim + hidden_dim
-
-        self.encoder = nn.Sequential(
-            nn.Linear(in_dim, hidden_dim), nn.ReLU())
-        # 1-hop attention mixing. Multi-head, concat -> hidden_dim, then a
-        # residual add keeps each node's own encoding available even if a node
-        # is isolated.
-        assert hidden_dim % n_heads == 0, "hidden_dim must be divisible by n_heads"
-        self.gat = GATLayer(hidden_dim, hidden_dim // n_heads, n_heads=n_heads,
-                            concat=True)
-        self.head = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
-            nn.Linear(hidden_dim, action_dim))
-
-        adj = torch.as_tensor(adj, dtype=torch.float32)
-        self.register_buffer('adj', adj)   # [N, N] with self-loops
-
-    def _augment(self, state):
-        if self.use_agent_emb:
-            emb = self.agent_emb.weight.unsqueeze(0).expand(state.shape[0], -1, -1)
-            state = torch.cat([state, emb], dim=-1)
-        return state
-
-    def forward(self, state):
-        x = self._augment(state)
-        h = self.encoder(x)                       # [B, N, hidden]
-        h = h + self.gat(h, self.adj)             # 1-hop neighbour mixing (residual)
-        h = F.relu(h)
-        return self.head(h)                       # [B, N, action_dim]
-
-
 class SFQNet(nn.Module):
     """Per-agent SUCCESSOR-FEATURE network: predicts psi(s, a) in R^K per action.
 
-    Identical independent-learner backbone to :class:`MLPQNet` (parameters
+    Independent-learner backbone (parameters
     shared across agents, own-observation only, optional identity embedding) but
     the head emits ``action_dim * feat_dim`` values reshaped to
     ``[B, N, action_dim, feat_dim]`` -- the expected discounted feature vector

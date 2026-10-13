@@ -2,10 +2,7 @@ MIT License
 
 Copyright (c) 2026 The GMM-DSF authors
 
-Portions of this codebase are derived from MA-USFA
-(https://github.com/a372115389/gfds_tsc, MIT License).
-baselines/prlight.py is adapted from PLight/PRLight
-(https://github.com/RL-DLMU/PRLight-and-PLight); see the file header.
+Portions of this codebase are derived from MA-USFA (MIT License).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

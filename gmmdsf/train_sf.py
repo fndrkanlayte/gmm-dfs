@@ -19,7 +19,6 @@ Phases (``--phase``):
                        ``--composer_norm 1``).
 
 ``transfer`` / ``composer`` are accepted as aliases of independent / ma-usfa.
-Full task-specific retraining baselines live in ``baselines/``.
 """
 import warnings
 warnings.filterwarnings('ignore')
