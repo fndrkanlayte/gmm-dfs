@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# Experiment outputs (recreated by scripts/)
+gmmdsf/logs/
+gmmdsf/eval_runs/
+gmmdsf/figures/
+gmmdsf/baseline_runs/
+gmmdsf/sf_*/
+gmmdsf/gmm_*/
+gmmdsf/composite_*/
+gmmdsf/abspressure_*/
+gmmdsf/*.csv
+gmmdsf/*.jsonl
+gmmdsf/tripinfo*.xml
+gmmdsf/feature_scale.json
+*.out
+*.err

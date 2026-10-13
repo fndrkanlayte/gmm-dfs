@@ -1,0 +1,11 @@
+torch>=1.12
+numpy>=1.23
+matplotlib>=3.5
+tqdm>=4.60
+# sumo-rl + a SUMO installation are required for the traffic experiments.
+# eclipse-sumo provides the SUMO binaries + libsumo/traci on Windows/Linux:
+#   pip install eclipse-sumo>=1.26
+#   export SUMO_HOME=$(python -c "import sumo, os; print(os.path.dirname(sumo.__file__))")
+sumo-rl>=1.4
+gymnasium
+pettingzoo
