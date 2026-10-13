@@ -11,11 +11,8 @@ tasks without retraining: `a_i = argmax_a E[U_i(Z_i(s_i, a))]`, for homogeneous
 utilities. A bounded one-hop neighbour composer gives cheap task adaptation
 with the backbone frozen.
 
-Derived from MA-USFA (MIT license): the SF backbone, per-agent `w` interface
-and neighbour composer are inherited; the mixture outcome model, closed-form
-non-linear utilities, task families and gated composer are new.
-`baselines/prlight.py` is a port of PLight/PRLight
-(github.com/RL-DLMU/PRLight-and-PLight). SUMO scenarios under `data/raw_data/`
+Built on MA-USFA. `baselines/prlight.py` is a port of PLight/PRLight
+(github.com/RL-DLMU/PRLight-and-PLight); SUMO scenarios under `data/raw_data/`
 are redistributed from LibSignal.
 
 ## Layout
